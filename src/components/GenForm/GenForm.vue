@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, ref } from "vue";
 import type {
     ErrorMessage,
     Field,
@@ -16,6 +16,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: GenFormData): void;
+    (e: "submit", values: Record<string, any>): void;
+    (e: "reset"): void;
 }>();
 
 const componentMap: Record<FieldType, string> = {
@@ -34,7 +36,17 @@ const formData = computed({
     },
 });
 
+const earlyValidation = ref(false);
+
+const isValid = computed(() => {
+    return Object.values(formData.value || {}).every(
+        (field) => field.errors === undefined || field.errors.length === 0,
+    );
+});
+
 function setValue(name: string, value: any, errors?: ErrorMessage[]) {
+    earlyValidation.value = false;
+
     if (formData.value[name]) {
         formData.value[name].value = value;
         if (errors) {
@@ -146,11 +158,11 @@ function formInputHandler(field: Field, event: any) {
     }
 }
 
-function formChangeHandler(field: Field, event: Event) {
+function formChangeHandler(field: Field, _event: Event) {
     setValue(field.name, !formData.value[field.name]?.value);
 }
 
-function inputBlurHandler(field: Field, event: Event) {
+function inputBlurHandler(field: Field, _event: Event) {
     if (field.validtionMode === "blur") {
         const errors = resolveValidators(
             formData.value[field.name]?.value,
@@ -159,25 +171,85 @@ function inputBlurHandler(field: Field, event: Event) {
         setErrors(field.name, errors);
     }
 }
+
+function handleSubmit(event: SubmitEvent) {
+    props.config.fields.forEach((field) => {
+        const errors = resolveValidators(formData.value[field.name], field);
+        setErrors(field.name, errors);
+    });
+
+    if (isValid.value) {
+        emit(
+            "submit",
+            Object.keys(formData.value).reduce(
+                (acc, fieldKey) => {
+                    acc[fieldKey] = formData.value[fieldKey]?.value;
+                    return acc;
+                },
+                {} as Record<string, any>,
+            ),
+        );
+    }
+}
+
+function handleReset() {
+    Object.keys(formData.value).forEach((fieldKey) => {
+        formData.value[fieldKey] = { value: undefined, errors: [] };
+    });
+
+    emit("reset");
+}
+
+// got lazy to figure this part to be more user friendly
+// onMounted(() => {
+//     props.config.fields.forEach((field) => {
+//         const errors = resolveValidators(formData.value[field.name], field);
+//         setErrors(field.name, errors);
+
+//         if (errors.length) earlyValidation.value = true;
+//     });
+// });
 </script>
 
 <template>
-    <form class="gen-form">
+    <form
+        class="gen-form"
+        noValidate
+        @submit.prevent="handleSubmit"
+        @reset.prevent="handleReset"
+    >
         <label
             v-for="field in config.fields"
             :key="field.name"
+            class="gen-form__field"
             v-bind="field.label?.attrs"
         >
             <!-- label -->
-            <span v-if="field.label?.text && !$slots[`${field.name}-label`]">
+            <span
+                v-if="
+                    field.label?.text &&
+                    !$slots[`${field.name}-label`] &&
+                    !$slots['label']
+                "
+            >
                 {{ field.label.text }}
             </span>
-            <slot v-else :name="`${field.name}-label`" :field="field" />
+            <slot
+                v-else-if="$slots[`${field.name}-label`]"
+                :name="`${field.name}-label`"
+                :field="field"
+            />
+            <slot
+                v-else-if="$slots['label'] && !$slots[`${field.name}-label`]"
+                name="label"
+                :field="field"
+            />
 
             <!-- input -->
             <component
                 :is="componentMap[field.type]"
                 v-bind="field.attrs"
+                :name="field.name"
                 :value="resolveFieldValue(field)"
                 :type="resolveFieldType(field)"
                 @input="(event: Event) => formInputHandler(field, event)"
@@ -221,7 +293,20 @@ function inputBlurHandler(field: Field, event: Event) {
                                 :option="option"
                             />
                         </template>
-                        <template v-else>
+                        <template
+                            v-else-if="
+                                field.type === 'select' &&
+                                $slots['select-option'] &&
+                                !$slots[`${field.name}-option`]
+                            "
+                        >
+                            <slot
+                                name="select-option"
+                                :field="field"
+                                :option="option"
+                            />
+                        </template>
+                        <template v-else-if="field.type === 'select'">
                             {{
                                 typeof option === "string" ||
                                 typeof option === "number"
@@ -234,17 +319,78 @@ function inputBlurHandler(field: Field, event: Event) {
             </component>
             <!-- error message(s) -->
             <span
-                v-if="formData[field.name]?.errors?.[0]"
+                v-if="
+                    !$slots[`${field.name}-error`] &&
+                    !$slots['error'] &&
+                    formData[field.name]?.errors?.[0]
+                "
                 class="gen-form__error"
             >
                 {{ formData[field.name]?.errors?.[0] }}
             </span>
+            <slot
+                v-else-if="$slots['error']"
+                name="error"
+                :field="field"
+                :errors="formData[field.name]?.errors || []"
+            />
+            <slot
+                v-else-if="$slots[`${field.name}-error`] && !$slots['error']"
+                :name="`${field.name}-error`"
+                :field="field"
+                :errors="formData[field.name]?.errors || []"
+            />
         </label>
+
+        <slot name="submit" :isValid="isValid">
+            <button type="submit" :disabled="!isValid">Submit</button>
+        </slot>
+
+        <slot name="reset" :isValid="isValid">
+            <button type="reset">Reset</button>
+        </slot>
     </form>
 </template>
 
 <style lang="scss" scoped>
+.gen-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    button {
+        padding: 4px 0px;
+
+        &:disabled {
+            cursor: not-allowed;
+        }
+
+        &:not(:disabled) {
+            cursor: pointer;
+        }
+    }
+}
+
 .gen-form__error {
     color: red;
+    font-size: 13px;
+}
+
+.gen-form__field {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+
+    select,
+    option {
+        font-size: 16px;
+        padding: 4px 8px;
+    }
+
+    input {
+        font-size: 16px;
+        padding: 4px 8px;
+    }
 }
 </style>

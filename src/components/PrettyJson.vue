@@ -16,7 +16,6 @@ pre.pretty-json {
     font-size: 13px;
     line-height: 1.6;
     overflow-x: auto;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
     white-space: pre;
 }
 </style>
