@@ -1,30 +1,134 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { ref } from "vue";
+import PrettyJson from "./components/PrettyJson.vue";
+
+import GenForm from "./components/GenForm/GenForm.vue";
+import type { GenFormConfig } from "./components/GenForm/types";
+
+const formData = ref({
+    acceptTerms: {
+        value: true,
+    },
+});
+
+const formConfig: GenFormConfig = {
+    fields: [
+        {
+            name: "username",
+            type: "input",
+            label: { text: "Username", attrs: { for: "username" } },
+            attrs: {
+                id: "username",
+                type: "text",
+                placeholder: "Enter username",
+                maxlength: 32,
+                autocomplete: "username",
+            },
+            validators: [
+                (value) => (!value ? "Username is required" : undefined),
+                (value) =>
+                    value && value.length < 3 ? "Too short" : undefined,
+            ],
+            validtionMode: "eager",
+        },
+        {
+            name: "email",
+            type: "input",
+            label: { text: "Email" },
+            attrs: {
+                type: "email",
+                placeholder: "user@example.com",
+                autocomplete: "email",
+            },
+            validators: [
+                (value) => (!value ? "Email is required" : undefined),
+                (value) =>
+                    value && !/^\S+@\S+\.\S+$/.test(value)
+                        ? "Invalid email"
+                        : undefined,
+            ],
+            validtionMode: "blur",
+        },
+        {
+            name: "password",
+            type: "input",
+            label: { text: "Password" },
+            attrs: {
+                type: "password",
+                minlength: 8,
+                autocomplete: "new-password",
+            },
+            validators: [
+                (value) => (!value ? "Password required" : undefined),
+                (value) =>
+                    value && value.length < 8
+                        ? "Password too short"
+                        : undefined,
+            ],
+            validtionMode: "lazy",
+        },
+        {
+            name: "acceptTerms",
+            type: "checkbox",
+            label: { text: "Accept terms and conditions" },
+            attrs: { checked: false, id: "acceptTerms" },
+            validators: [
+                (value) => (!value ? "You must accept terms" : undefined),
+            ],
+            validtionMode: "eager",
+        },
+        {
+            name: "country",
+            type: "select",
+            label: { text: "Country" },
+            options: [
+                { id: "us", value: "US", title: "United States" },
+                { id: "de", value: "DE", title: "Germany" },
+                { id: "fr", value: "FR", title: "France" },
+                { id: "jp", value: "JP", title: "Japan" },
+                { id: "br", value: "BR", title: "Brazil" },
+            ],
+            validators: [
+                (value) => (!value ? "Country is required" : undefined),
+            ],
+            validtionMode: "lazy",
+        },
+        {
+            name: "bio",
+            type: "textarea",
+            label: { text: "Bio" },
+            attrs: {
+                rows: 4,
+                cols: 40,
+                placeholder: "Tell us about yourself",
+                maxlength: 200,
+            },
+            validators: [
+                (value) =>
+                    value && value.length > 200
+                        ? "Bio must be under 200 characters"
+                        : undefined,
+            ],
+            validtionMode: "blur",
+        },
+    ],
+};
 </script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+    <GenForm
+        :config="formConfig"
+        v-model="formData"
+        class="custom-form-class"
+    />
+    <PrettyJson>
+        {{ formData }}
+    </PrettyJson>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+<style lang="scss">
+.custom-form-class {
+    display: flex;
+    flex-direction: column;
 }
 </style>
