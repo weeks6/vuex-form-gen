@@ -1,4 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHashHistory,
+  createWebHistory,
+} from "vue-router";
 import Home from "./pages/Home.vue";
 import Basic from "./pages/Basic.vue";
 import SubmitHandler from "./pages/SubmitHandler.vue";
@@ -12,8 +16,9 @@ const routes = [
 ];
 
 export const router = createRouter({
-  history: createWebHistory(
-    import.meta.env.MODE === "production" ? "/vuex-form-gen/" : undefined,
-  ),
+  history:
+    import.meta.env.MODE === "production"
+      ? createWebHashHistory()
+      : createWebHistory(),
   routes,
 });
