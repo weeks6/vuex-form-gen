@@ -172,7 +172,7 @@ function inputBlurHandler(field: Field, _event: Event) {
     }
 }
 
-function handleSubmit(event: SubmitEvent) {
+function handleSubmit(_event: SubmitEvent) {
     props.config.fields.forEach((field) => {
         const errors = resolveValidators(formData.value[field.name], field);
         setErrors(field.name, errors);

@@ -22,5 +22,6 @@ import Menu from "./components/Menu.vue";
 .page {
     flex-grow: 1;
     padding: 16px;
+    margin-left: 240px;
 }
 </style>

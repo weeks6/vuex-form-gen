@@ -29,6 +29,8 @@ const examples = [
 
 <style scoped lang="scss">
 .menu {
+    position: fixed;
+    background: white;
     display: flex;
     flex-direction: column;
     gap: 16px;

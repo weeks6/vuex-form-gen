@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+// @ts-ignore
+import { useStore } from "vuex";
+import { computed } from "vue";
 
 import GenForm from "../components/GenForm/GenForm.vue";
 import PrettyJson from "../components/PrettyJson.vue";
 
 import type { GenFormConfig } from "../components/GenForm/types";
-
-const formData = ref({});
 
 const formConfig: GenFormConfig = {
     fields: [
@@ -48,6 +48,17 @@ const formConfig: GenFormConfig = {
         },
     ],
 };
+
+const FORM_NAME = "submit-handler";
+const store = useStore();
+const formData = computed({
+    get() {
+        return store.getters.getForm(FORM_NAME);
+    },
+    set(value) {
+        store.dispatch("updateForm", { formName: FORM_NAME, data: value });
+    },
+});
 
 function onFormSubmit(values: Record<string, any>) {
     alert(`Form submit with values: ${JSON.stringify(values, null, 2)}`);
