@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import PrettyJson from "./components/PrettyJson.vue";
-
 import Menu from "./components/Menu.vue";
 </script>
 

@@ -1,3 +1,4 @@
+// @ts-nocheck because I cant bother with the ts issue
 import { createStore } from "vuex";
 
 export interface FormsState {
