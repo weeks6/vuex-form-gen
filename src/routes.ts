@@ -12,6 +12,8 @@ const routes = [
 ];
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(
+    import.meta.env.MODE === "production" ? "/vuex-form-gen/" : undefined,
+  ),
   routes,
 });
